@@ -1,6 +1,6 @@
 """
 -------------------------------------
-|       TP1 - B62 Projet Oracle     |
+|       TP2 - B62 Projet Oracle     |
 |           Basile Paradis          |
 -------------------------------------
 """
@@ -18,15 +18,15 @@ def main():
     dictionnaire = {}
     mainFichierTxt = []
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'e:f:c:h', ['encodage=', 'fichier=', 'chemin=', 'help'])
+        opts, args = getopt.getopt(sys.argv[1:], 'e:t:c:h', ['enc=', 'fenetre=', 'chemin=', 'help'])
 
         for opt, arg in opts:
             # Lire l'encodage
-            if opt in ('-e', '--encodage'):
+            if opt in ('-e', '--enc'):
                 encodage = arg
 
             # Lire la taille de la fenêtre
-            elif opt in ('-f', '--fenetre'):
+            elif opt in ('-t', '--fenetre'):
                 if arg.isnumeric():
                     tailleFenetre = arg
                 else:
@@ -54,7 +54,7 @@ def main():
 
             # Afficher l'aide
             elif opt in ('-h', '--help'):
-                print("Exemple: TP1.py -f 5 -e utf-8 -c ../test.txt")
+                print("Exemple: TP1.py -t 5 -e utf-8 -c ../test.txt")
                 sys.exit()
 
         # Si les variables ne sont pas initialisées, on lance un message d'erreur, sinon on continue
