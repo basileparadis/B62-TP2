@@ -20,7 +20,7 @@ def lire_texte(fichier):
 def normaliser(mot):
     mot = mot.lower()
     mot = re.sub('.*\'', '', mot)
-    mot = mot.translate({ord(c): None for c in ".,!?:;«»"})
+    mot = mot.translate({ord(carac): None for carac in "«»':;,.?!"})
     return mot
 
 
