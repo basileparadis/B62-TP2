@@ -22,7 +22,11 @@ class DAO_SQLite():
     def inserer_dict(self, liste_texte):
         dictionnaire = {}
         nouvelle_liste = []
-        resultat = self.cursor.execute("SELECT index_mot, mot FROM mots")
+        try:
+            resultat = self.cursor.execute("SELECT index_mot, mot FROM mots")
+        except:
+            self.recreer_table()
+            resultat = self.cursor.execute("SELECT index_mot, mot FROM mots")
 
         for index, mot in resultat:
             dictionnaire[mot] = index
@@ -36,6 +40,8 @@ class DAO_SQLite():
         return dictionnaire
 
     def inserer_matrice(self):
+        liste_insertions = []
+        liste_MaJ = []
         pass
 
     def sauvegarder_matrice(self):

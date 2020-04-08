@@ -12,7 +12,7 @@ def lire_texte(fichier):
         words = line.split()
         for word in words:
             word = normaliser(word)
-            if word is not "":
+            if word != "":
                 liste_mots.append(word)
     return liste_mots
 
