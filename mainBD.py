@@ -10,6 +10,6 @@ from Controlleur import Controlleur
 
 if __name__ == '__main__':
     controller = Controlleur(sys.argv)
-    controller.process()
+    controller.parse()
 
 

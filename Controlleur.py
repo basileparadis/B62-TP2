@@ -1,9 +1,8 @@
+import argparse
 import getopt
 import os
 import sys
-
 import numpy as np
-
 import stopWords
 from DAO_BD import DAO_SQLite
 import lecture as Lecture
@@ -18,7 +17,31 @@ class Controlleur:
         self.matrix = None
         # sys.exit(main())
 
-    def process(self):
+    def parse(self):
+        parser = argparse.ArgumentParser(description='Cooccurences de mots dans un texte.')
+        parser.add_argument('-e', action='store_true', help='mode entraînement')
+        parser.add_argument('-t', '--fenetre', type=int, help='taille de la fenêtre', metavar='<taille>')
+        parser.add_argument('--enc', help='encodage du fichier', metavar='<encodage>')
+        parser.add_argument('-c', '--chemin', help='chemin du corpus d’entraînement', metavar='<chemin>')
+
+        args = vars(parser.parse_args())
+
+        entrainement = args['e']
+        chemin = args['chemin']
+        encodage = args['enc']
+        fenetre = args['fenetre']
+
+        self.process(entrainement, chemin, encodage, fenetre)
+
+    def process(self, entrainement, chemin, encodage, fenetre):
+        if entrainement is True and (chemin is None or encodage is None or fenetre is None):
+            print('Vous devez définir -t --enc et --chemin')
+            sys.exit()
+        else:
+            print(str(chemin) + ' ' + str(encodage) + ' ' + str(fenetre))
+
+    def processArgParse(self):
+        tailleFenetre = None
         try:
             opts, args = getopt.getopt(sys.argv[1:], 'et:c:h', ['enc=', 'fenetre=', 'chemin=', 'help'])
 

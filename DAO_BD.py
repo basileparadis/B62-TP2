@@ -2,9 +2,20 @@ import sqlite3
 
 
 class DAO_SQLite():
+
+    CHEMINBD = './synonymes.db'
+    ENABLE_FK = 'PRAGMA foreign_keys = 1'
+
     def __init__(self):
         self.connection = sqlite3.connect("synonymes.db")
         self.cursor = self.connection.cursor()
+
+    def connecter(CHEMINBD):
+        connexion = sqlite3.connect(CHEMINBD)
+        curseur = connexion.cursor()
+        curseur.execute(ENABLE_FK)
+
+        return connexion, curseur
 
     def recreer_table(self):
         try:
