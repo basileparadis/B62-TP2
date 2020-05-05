@@ -1,26 +1,32 @@
 import sqlite3
 
 
-class DAO_SQLite():
-
-    CHEMINBD = './synonymes.db'
-    ENABLE_FK = 'PRAGMA foreign_keys = 1'
+class DAO_SQLite:
 
     def __init__(self):
         self.connection = sqlite3.connect("synonymes.db")
         self.cursor = self.connection.cursor()
+        self.CHEMINBD = './synonymes.db'
+        self.DROP_MOTS = "DROP TABLE mots"
+        self.DROP_MATRICE = "DROP TABLE matrice"
+        self.ENABLE_FK = 'PRAGMA foreign_keys = 1'
+        self.SELECT_ALL_MATRICE = "SELECT * FROM matrice"
+        self.INSERT_MATRICE = "INSERT INTO matrice VALUES (:1, :2, :3, :4)"
+        self.MAJ_MATRICE = "UPDATE matrice SET score = :1 WHERE index_ligne = :2 " \
+                           "AND index_colonne = :3 " \
+                           "AND taille_fenetre = :4 "
 
-    def connecter(CHEMINBD):
+    def connecter(self, CHEMINBD):
         connexion = sqlite3.connect(CHEMINBD)
         curseur = connexion.cursor()
-        curseur.execute(ENABLE_FK)
+        curseur.execute(self.ENABLE_FK)
 
         return connexion, curseur
 
-    def recreer_table(self):
+    def creer_table(self):
         try:
-            self.cursor.execute("DROP TABLE mots")
-            self.cursor.execute("DROP TABLE matrice")
+            self.cursor.execute(self.DROP_MOTS)
+            self.cursor.execute(self.DROP_MATRICE)
         except:
             pass
         finally:
@@ -36,24 +42,41 @@ class DAO_SQLite():
         try:
             resultat = self.cursor.execute("SELECT index_mot, mot FROM mots")
         except:
-            self.recreer_table()
+            self.creer_table()
             resultat = self.cursor.execute("SELECT index_mot, mot FROM mots")
 
         for index, mot in resultat:
             dictionnaire[mot] = index
         for mot in liste_texte:
             if mot not in dictionnaire:
-                nouvelle_liste.append(len(dictionnaire), mot)
+                nouvelle_liste.append((len(dictionnaire), mot))
                 dictionnaire[mot] = len(dictionnaire)
 
         self.cursor.executemany("INSERT INTO mots VALUES (:1, :2)", nouvelle_liste)
         self.connection.commit()
         return dictionnaire
 
-    def inserer_matrice(self):
+    def inserer_matrice(self, dico):
         liste_insertions = []
         liste_MaJ = []
-        pass
+        dictionnaire = self.construire_dictionnaire_de_matrice()
+        for key, score in dico.items():
+            if key in dictionnaire:
+                newScore = score + dictionnaire[key]
+                liste_MaJ.append((newScore, key[0], key[1], key[2]))
+            else:
+                liste_insertions.append((key[0], key[1], key[2], score))
+        self.cursor.executemany(self.INSERT_MATRICE, liste_insertions)
+        if liste_MaJ:
+            self.cursor.executemany(self.MAJ_MATRICE, liste_MaJ)
+        self.connection.commit()
+
+    def construire_dictionnaire_de_matrice(self):
+        dictFromBD = {}
+        valuesFromMatrix = self.cursor.execute(self.SELECT_ALL_MATRICE).fetchall()
+        for t in valuesFromMatrix:
+            dictFromBD[(t[0], t[1], t[2])] = t[3]
+        return dictFromBD
 
     def sauvegarder_matrice(self):
         pass

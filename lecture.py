@@ -18,8 +18,11 @@ def lire_texte(fichier):
 
 
 def normaliser(mot):
+    # Mettre les mots en minuscule
     mot = mot.lower()
+    # Enlever les apostrophes
     mot = re.sub('.*\'', '', mot)
+    # Enlever toute ponctuation/caractère spécial
     mot = mot.translate({ord(carac): None for carac in "«»':;,.?!"})
     return mot
 
