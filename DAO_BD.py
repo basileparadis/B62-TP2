@@ -7,14 +7,19 @@ class DAO_SQLite:
         self.connection = sqlite3.connect("synonymes.db")
         self.cursor = self.connection.cursor()
         self.CHEMINBD = './synonymes.db'
+        # DÉCLARATIONS SQL
         self.DROP_MOTS = "DROP TABLE mots"
         self.DROP_MATRICE = "DROP TABLE matrice"
         self.ENABLE_FK = 'PRAGMA foreign_keys = 1'
         self.SELECT_ALL_MATRICE = "SELECT * FROM matrice"
+        self.SELECT_ALL_MATRICE_2 = "SELECT index_ligne, index_colonne, score FROM matrice WHERE taille_fenetre = :1"
         self.INSERT_MATRICE = "INSERT INTO matrice VALUES (:1, :2, :3, :4)"
         self.MAJ_MATRICE = "UPDATE matrice SET score = :1 WHERE index_ligne = :2 " \
                            "AND index_colonne = :3 " \
                            "AND taille_fenetre = :4 "
+        self.INDEX_LIGNE = 0
+        self.INDEX_COLONNE = 1
+        self.SCORE = 3
 
     def connecter(self, CHEMINBD):
         connexion = sqlite3.connect(CHEMINBD)
@@ -27,8 +32,6 @@ class DAO_SQLite:
         try:
             self.cursor.execute(self.DROP_MOTS)
             self.cursor.execute(self.DROP_MATRICE)
-        except:
-            pass
         finally:
             self.cursor.execute("CREATE TABLE IF NOT EXISTS mots (index_mot INT PRIMARY KEY, mot TEXT)")
             self.cursor.execute("""CREATE TABLE IF NOT EXISTS matrice ( index_ligne INT, index_colonne INT, 
@@ -60,6 +63,7 @@ class DAO_SQLite:
         liste_insertions = []
         liste_MaJ = []
         dictionnaire = self.construire_dictionnaire_de_matrice()
+        # print(dictionnaire)
         for key, score in dico.items():
             if key in dictionnaire:
                 newScore = score + dictionnaire[key]
@@ -72,11 +76,24 @@ class DAO_SQLite:
         self.connection.commit()
 
     def construire_dictionnaire_de_matrice(self):
-        dictFromBD = {}
-        valuesFromMatrix = self.cursor.execute(self.SELECT_ALL_MATRICE).fetchall()
-        for t in valuesFromMatrix:
-            dictFromBD[(t[0], t[1], t[2])] = t[3]
-        return dictFromBD
+        dico_de_bd = {}
+        valeurs_matrice = self.cursor.execute(self.SELECT_ALL_MATRICE).fetchall()
+        row = self.cursor
+        # print(row)
+        for t in valeurs_matrice:
+            # print(t)
+            dico_de_bd[(t[0], t[1], t[2])] = t[3]
+        return dico_de_bd
 
-    def sauvegarder_matrice(self):
-        pass
+    def importer_matrice_bd(self, taille_fenetre):
+        data = []
+        self.cursor.execute(self.SELECT_ALL_MATRICE_2, (int(taille_fenetre),))
+        for row in self.cursor:
+            ligne = row[self.INDEX_LIGNE]
+            # print(ligne)
+            colonne = row[self.INDEX_COLONNE]
+            # print(colonne)
+            score = row[self.SCORE]
+            # print(score)
+            data.append((ligne, colonne, score))
+        return data
