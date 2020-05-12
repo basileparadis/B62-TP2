@@ -19,7 +19,7 @@ class DAO_SQLite:
                            "AND taille_fenetre = :4 "
         self.INDEX_LIGNE = 0
         self.INDEX_COLONNE = 1
-        self.SCORE = 3
+        self.SCORE = 2
 
     def connecter(self, CHEMINBD):
         connexion = sqlite3.connect(CHEMINBD)
@@ -88,8 +88,7 @@ class DAO_SQLite:
         data = []
         try:
             cur = self.cursor
-            cur.execute(self.SELECT_ALL_MATRICE_2, (int(taille_fenetre),))
-            rows = cur.fetchall()
+            rows = cur.execute(self.SELECT_ALL_MATRICE_2, (taille_fenetre,))
             for row in rows:
                 ligne = row[self.INDEX_LIGNE]
                 colonne = row[self.INDEX_COLONNE]
