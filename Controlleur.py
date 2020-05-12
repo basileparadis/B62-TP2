@@ -22,35 +22,57 @@ class Controlleur:
                                               conflict_handler='resolve')
         self.parser.add_argument('-bd', action='store_true', help='réinitialise la BD à son état initial')
         self.parser.add_argument('-e', action='store_true', help='mode entraînement')
+        self.parser.add_argument('-r', action='store_true', help='mode recherche de synonymes')
         self.parser.add_argument('-t', '--fenetre', type=int, help='taille de la fenêtre', metavar='<taille>')
         self.parser.add_argument('--enc', help='encodage du fichier', metavar='<encodage>')
         self.parser.add_argument('-c', '--chemin', help='chemin du corpus d’entraînement', metavar='<chemin>')
 
         args = vars(self.parser.parse_args())
         entrainement = args['e']
+        recherche = args['r']
         chemin = args['chemin']
         encodage = args['enc']
         self.fenetre = args['fenetre']
         recreerBD = args['bd']
 
-        self.process(entrainement, chemin, encodage, recreerBD)
+        self.process(entrainement, chemin, encodage, recreerBD, recherche)
 
-    def process(self, entrainement, chemin, encodage, recreerBD):
+    def process(self, entrainement, chemin, encodage, recreerBD, recherche):
 
+        # DROP & CREATE TABLE
         if recreerBD:
             self.bd.creer_table()
             print('\n*BASE DE DONNÉES RECRÉÉE*')
-        if entrainement is False:
+        # PRÉVENTION DES ERREURS
+        if entrainement is False and recherche is False:
             print('\nAucun mode choisi\n')
             self.parser.print_help()
             sys.exit()
-        elif entrainement is True and (chemin is None or encodage is None or self.fenetre is None):
-            print('\nVous devez définir -t --enc et --chemin')
+        elif entrainement is True and recherche is True:
+            print('\nEntraînement et recherche ne peuvent être exécutés simultanément\n')
+            self.parser.print_help()
             sys.exit()
-        else:
+        elif entrainement is True and (chemin is None or encodage is None or self.fenetre is None):
+            print('\nVous devez définir --chemin, --enc et -t')
+            sys.exit()
+        elif recherche is True and self.fenetre is None:
+            print('\nVous devez définir -t')
+            sys.exit()
+        # MODE ENTRAINEMENT
+        if entrainement is True and (chemin is not None or encodage is not None and self.fenetre is not None):
             print('\n Texte: \t' + str(chemin)
                   + '\n Encodage: \t' + str(encodage)
-                  + '\n Fenêtre: \t' + str(self.fenetre))
+                  + '\n Fenêtre: \t' + str(self.fenetre)
+                  + '\n\nAnalyse en cours...')
+            debut = time.time()
+            self.liste_mots = Lecture.liste_mots(chemin, encodage)
+            self.indexes = self.bd.inserer_dict(self.liste_mots)
+            self.bd.inserer_matrice(self.trouver_cooccurrences())
+            fin = time.time()
+            print('\nEntraînement complété en {} secondes'.format(round((fin - debut), 2)))
+            sys.exit()
+        # MODE RECHERCHE
+        if recherche is True and self.fenetre is not None:
             print('\nEntrez de manière espacée un mot, le nombre de synonymes que vous voulez et la méthode de calcul.'
                   '\n\nProduit scalaire = 0, Least-Squares = 1, City-Block = 2, Quitter = "q"\n')
 
@@ -66,22 +88,21 @@ class Controlleur:
                     else:
                         print("\nAnalyse en cours...\n")
                         debut = time.time()
-                        self.liste_mots = Lecture.liste_mots(chemin, encodage)
-                        self.indexes = self.bd.inserer_dict(self.liste_mots)
+                        self.indexes = self.bd.inserer_dict([])
                         self.construire_matrice()
-                        self.bd.inserer_matrice(self.trouver_cooccurrences())
+                        resultats = self.get_resultats(methodeCalc, leMot, nbSyn, self.matrice, self.indexes)
+                        fin = time.time()
+                        for i in range(0, int(nbSyn)):
+                            print(i + 1, " : ", resultats[i][0], ", score = ", resultats[i][1])
+                        print('\nAnalysé en {} secondes'.format(round((fin - debut), 2)))
+                        self.bd.construire_dictionnaire_de_matrice()
+
                 except getopt.GetoptError as erreur:
                     print(erreur)
                     sys.exit()
                 except ValueError:
                     print('Les options entrées sont invalides')
                     sys.exit()
-                try:
-                    resultats = self.get_resultats(methodeCalc, leMot, nbSyn, self.matrice, self.indexes)
-                    fin = time.time()
-                    for i in range(0, int(nbSyn)):
-                        print(i + 1, " : ", resultats[i][0], ", score = ", resultats[i][1])
-                    print('\nAnalysé en {} secondes'.format(round((fin - debut), 2)))
                 except KeyError as erreur:
                     print('Erreur de clé: ' + str(erreur))
                     print("Le mot n'existe peut-être pas dans le texte")
