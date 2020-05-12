@@ -18,8 +18,10 @@ class Controlleur:
         self.indexes = None
 
     def parse(self):
-        self.parser = argparse.ArgumentParser(description='Cooccurences de mots dans un texte.',
-                                              conflict_handler='resolve')
+        self.parser = argparse.ArgumentParser(description='Trouver les cooccurences de mots dans un texte.',
+                                              conflict_handler='resolve',
+                                              usage='\t%(prog)s -e -t <fenetre> --enc <encodage> --chemin <chemin>'
+                                                    '\n\t%(prog)s -r -t <fenetre>')
         self.parser.add_argument('-bd', action='store_true', help='réinitialise la BD à son état initial')
         self.parser.add_argument('-e', action='store_true', help='mode entraînement')
         self.parser.add_argument('-r', action='store_true', help='mode recherche de synonymes')
