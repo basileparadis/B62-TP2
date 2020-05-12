@@ -1,6 +1,8 @@
 import argparse
 import getopt
 import sys
+import time
+
 import numpy as np
 from DAO_BD import DAO_SQLite
 import lecture as Lecture
@@ -37,17 +39,19 @@ class Controlleur:
 
         if recreerBD:
             self.bd.creer_table()
-            print('\n*BASE DE DONNÉES RECRÉE*')
+            print('\n*BASE DE DONNÉES RECRÉÉE*')
         if entrainement is False:
-            print('\nAucun mode choisi')
+            print('\nAucun mode choisi\n')
             self.parser.print_help()
             sys.exit()
         elif entrainement is True and (chemin is None or encodage is None or self.fenetre is None):
             print('\nVous devez définir -t --enc et --chemin')
             sys.exit()
         else:
-            print(str(chemin) + ' ' + str(encodage) + ' ' + str(self.fenetre))
-            print('\nEntrez un mot, le nombre de synonymes que vous voulez et la méthode de calcul.'
+            print('\n Texte: \t' + str(chemin)
+                  + '\n Encodage: \t' + str(encodage)
+                  + '\n Fenêtre: \t' + str(self.fenetre))
+            print('\nEntrez de manière espacée un mot, le nombre de synonymes que vous voulez et la méthode de calcul.'
                   '\n\nProduit scalaire = 0, Least-Squares = 1, City-Block = 2, Quitter = "q"\n')
 
             saisie = input().lower()
@@ -60,6 +64,8 @@ class Controlleur:
                         print('Mauvaise saisie de donnée')
                         sys.exit()
                     else:
+                        print("\nAnalyse en cours...\n")
+                        debut = time.time()
                         self.liste_mots = Lecture.liste_mots(chemin, encodage)
                         self.indexes = self.bd.inserer_dict(self.liste_mots)
                         self.construire_matrice()
@@ -72,8 +78,10 @@ class Controlleur:
                     sys.exit()
                 try:
                     resultats = self.get_resultats(methodeCalc, leMot, nbSyn, self.matrice, self.indexes)
+                    fin = time.time()
                     for i in range(0, int(nbSyn)):
                         print(i + 1, " : ", resultats[i][0], ", score = ", resultats[i][1])
+                    print('\nAnalysé en {} secondes'.format(round((fin - debut), 2)))
                 except KeyError as erreur:
                     print('Erreur de clé: ' + str(erreur))
                     print("Le mot n'existe peut-être pas dans le texte")
@@ -102,9 +110,7 @@ class Controlleur:
                                 dico[cle] = 1
                             else:
                                 dico[cle] = dico[cle] + 1
-                    except IndexError as erreur:
-                        print(erreur)
-                        print("Erreur d'index")
+                    except IndexError:
                         pass
         return dico
 
@@ -112,7 +118,6 @@ class Controlleur:
         taille_matrice = len(self.indexes)
         matrice_temp = np.zeros((taille_matrice, taille_matrice))
         matrice_reduite = self.bd.importer_matrice_bd(self.fenetre)
-        # print(matrice_reduite)
         for ligne, colonne, score in matrice_reduite:
             matrice_temp[ligne][colonne] = score
             matrice_temp[colonne][ligne] = score
@@ -124,11 +129,11 @@ class Controlleur:
 
     # Algorithme least-squares
     def leastSquare(self, vector1, vector2):
-        return np.sum((vector1 - vector2) ** 2)
+        return np.sum(np.square(np.subtract(vector1, vector2)))
 
     # Algorithme city-block
     def cityBlock(self, vector1, vector2):
-        return np.sum(np.abs(vector1 - vector2))
+        return np.sum(np.abs(np.subtract(vector1, vector2)))
 
     # Récupérer les données dans la BD
     def get_resultats(self, methodeCalc, leMot, nbSyn, matrice, indexes):
@@ -136,7 +141,6 @@ class Controlleur:
         return resultats
 
     def algo(self, matrice, dico_mot_vers_index, index_mot, nombre_resultats, method):
-        # Mot : Score
         score_dict = {}
         dico_index_vers_mot = {valeur: cle for cle, valeur in dico_mot_vers_index.items()}
         for i in range(matrice.shape[0]):
@@ -147,9 +151,10 @@ class Controlleur:
                     score_dict[dico_index_vers_mot[i]] = self.leastSquare(matrice[i], matrice[index_mot])
                 elif int(method) == 2:
                     score_dict[dico_index_vers_mot[i]] = self.cityBlock(matrice[i], matrice[index_mot])
-        return self.getResults(nombre_resultats, self.trier_scores(True if method == 1 else False, score_dict))
+        return self.liste_resultats(nombre_resultats, self.trier_scores(True if method == 1 else False, score_dict))
 
-    def getResults(self, nbResults, scores):
+    # Mot : Score
+    def liste_resultats(self, nbResults, scores):
         listResults = []
         j = i = 0
         while j <= int(nbResults):

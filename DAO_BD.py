@@ -4,7 +4,7 @@ import sqlite3
 class DAO_SQLite:
 
     def __init__(self):
-        self.connection = sqlite3.connect("synonymes.db")
+        self.connection = sqlite3.connect('synonymes.db')
         self.cursor = self.connection.cursor()
         self.CHEMINBD = './synonymes.db'
         # DÉCLARATIONS SQL
@@ -25,7 +25,6 @@ class DAO_SQLite:
         connexion = sqlite3.connect(CHEMINBD)
         curseur = connexion.cursor()
         curseur.execute(self.ENABLE_FK)
-
         return connexion, curseur
 
     def creer_table(self):
@@ -63,7 +62,6 @@ class DAO_SQLite:
         liste_insertions = []
         liste_MaJ = []
         dictionnaire = self.construire_dictionnaire_de_matrice()
-        # print(dictionnaire)
         for key, score in dico.items():
             if key in dictionnaire:
                 newScore = score + dictionnaire[key]
@@ -77,23 +75,25 @@ class DAO_SQLite:
 
     def construire_dictionnaire_de_matrice(self):
         dico_de_bd = {}
-        valeurs_matrice = self.cursor.execute(self.SELECT_ALL_MATRICE).fetchall()
-        row = self.cursor
-        # print(row)
-        for t in valeurs_matrice:
-            # print(t)
-            dico_de_bd[(t[0], t[1], t[2])] = t[3]
-        return dico_de_bd
+        try:
+            cur = self.cursor
+            cur.execute(self.SELECT_ALL_MATRICE)
+            rows = cur.fetchall()
+            for row in rows:
+                dico_de_bd[(row[0], row[1], row[2])] = row[3]
+        finally:
+            return dico_de_bd
 
     def importer_matrice_bd(self, taille_fenetre):
         data = []
-        self.cursor.execute(self.SELECT_ALL_MATRICE_2, (int(taille_fenetre),))
-        for row in self.cursor:
-            ligne = row[self.INDEX_LIGNE]
-            # print(ligne)
-            colonne = row[self.INDEX_COLONNE]
-            # print(colonne)
-            score = row[self.SCORE]
-            # print(score)
-            data.append((ligne, colonne, score))
-        return data
+        try:
+            cur = self.cursor
+            cur.execute(self.SELECT_ALL_MATRICE_2, (int(taille_fenetre),))
+            rows = cur.fetchall()
+            for row in rows:
+                ligne = row[self.INDEX_LIGNE]
+                colonne = row[self.INDEX_COLONNE]
+                score = row[self.SCORE]
+                data.append((ligne, colonne, score))
+        finally:
+            return data
